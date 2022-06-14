@@ -129,14 +129,14 @@ create table if not exists public.shipping_info (
 	vendorid int8 null,
 	payment_amount numeric(14, 2) null,
 	shipping_plan_datetime timestamp null,
-	shipping_end_plan_datetime timestamp null,
+	hours_to_plan_shipping numeric(14, 2) null,
 	transfer_type_id int null,
 	shipping_country_id int null,
 	agreementid int null,
 	primary key (shippingid),
-	foreign key (transfer_type_id) references public.shipping_transfer (transfer_type_id),
-	foreign key (shipping_country_id) references public.shipping_country_rates (shipping_country_id),
-	foreign key (agreementid) references public.shipping_agreement (agreementid)
+	foreign key (transfer_type_id) references public.shipping_transfer (transfer_type_id) on update cascade,
+	foreign key (shipping_country_id) references public.shipping_country_rates (shipping_country_id) on update cascade,
+	foreign key (agreementid) references public.shipping_agreement (agreementid) on update cascade
 );
 
 --shipping_status 
@@ -165,7 +165,7 @@ select
 		else 0
 	end as is_shipping_finish 
 	, case
-		when ss.shipping_end_fact_datetime > si.shipping_end_plan_datetime 
+		when ss.shipping_end_fact_datetime > (si.shipping_plan_datetime + concat(si.hours_to_plan_shipping, ' hours')::interval)
 		then extract(day from age(ss.shipping_end_fact_datetime, si.shipping_plan_datetime))
 		else 0
 	end as delay_day_at_shipping 
@@ -223,7 +223,7 @@ select distinct on (shippingid)
 	, s.vendorid 
 	, s.payment_amount 
 	, s.shipping_plan_datetime
-	, s.shipping_plan_datetime + concat(s.hours_to_plan_shipping, ' hours')::interval as shipping_end_plan_datetime 
+	, s.hours_to_plan_shipping
 	, st.transfer_type_id
 	, scr.shipping_country_id
 	, (regexp_split_to_array(s.vendor_agreement_description, ':'))[1]::int4 as agreementid --sa.agreementid
