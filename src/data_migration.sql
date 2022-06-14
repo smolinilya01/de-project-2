@@ -32,7 +32,7 @@ select distinct on (shippingid)
 	, s.vendorid 
 	, s.payment_amount 
 	, s.shipping_plan_datetime
-	, s.shipping_plan_datetime + concat(s.hours_to_plan_shipping, ' hours')::interval as shipping_end_plan_datetime 
+	, s.hours_to_plan_shipping
 	, st.transfer_type_id
 	, scr.shipping_country_id
 	, (regexp_split_to_array(s.vendor_agreement_description, ':'))[1]::int4 as agreementid --sa.agreementid
